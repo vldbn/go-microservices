@@ -1,0 +1,65 @@
+version: "3"
+
+services:
+  rabbitmq:
+    image: rabbitmq:3.6.9-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin
+    ports:
+      - "4369:4369"
+      - "5671:5671"
+      - "5672:5672"
+      - "15671:15671"
+      - "15672:15672"
+      - "25672:25672"
+    networks:
+      - network
+  user_service:
+    build: ./users-service
+    env_file:
+      - .env
+    ports:
+      - 8000:8000
+    networks:
+      - network
+    restart: on-failure
+    depends_on:
+      - users_service_db
+      - rabbitmq
+  users_service_db:
+    image: mongo:latest
+    ports:
+      - 27017
+    networks:
+      - network
+    volumes:
+      - users_data_container:/data/db
+  addresses_service:
+    build: ./address-service
+    env_file:
+      - .env
+    ports:
+      - 8001:8001
+    networks:
+      - network
+    restart: on-failure
+    depends_on:
+      - addresses_service_db
+      - rabbitmq
+  addresses_service_db:
+    image: mongo:latest
+    ports:
+      - 27017
+    networks:
+      - network
+    volumes:
+      - addresses_data_container:/data/db
+
+volumes:
+  users_data_container:
+  addresses_data_container:
+
+networks:
+  network:
+    driver: bridge
